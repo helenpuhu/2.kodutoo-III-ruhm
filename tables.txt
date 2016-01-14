@@ -1,0 +1,7 @@
+CREATE TABLE user_sample3(
+	id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	email VARCHAR(55),
+	password VARCHAR(55),
+	firstname VARCHAR(55),
+	lastname VARCHAR(55)
+	);

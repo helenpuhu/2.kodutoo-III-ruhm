@@ -1,136 +1,151 @@
 <?php
 
 	//LOGIN.PHP
+	require_once("../header.php");
 	require_once("../../config.php");
 	$database = "if15_helepuh_3";
 	$mysqli = new mysqli($servername, $username, $password, $database);
-	echo $mysqli->error;
+	//echo $mysqli->error;
 
 	
-//errori muutujad peavad igal juhul olemas olema	
+  // muuutujad errorite jaoks
 	$email_error = "";
 	$password_error = "";
-	$name_error = "";
-	
-	//muutujad andmebaasi väärtuste jaoks
+	$create_email_error = "";
+	$create_password_error = "";
+  // muutujad väärtuste jaoks
 	$email = "";
-	$name = "";
-	//Salvestame AB'i
-					$stmt = $mysqli->prepare("INSERT INTO users (email, password) VALUES (?,?)");
-					//echo $mysqli->error;
-					//echo $stmt->error;
-					
-				
-	
-	//kontrollime et keegi vajutas input nuppu
+	$password = "";
+	$create_email = "";
+	$create_password = "";
 	if($_SERVER["REQUEST_METHOD"] == "POST") {
-		
-		//echo "keegi vajutas nuppu";
-		
-		//echo "vajutas login nuppu!"
+		// *********************
+		// **** LOGI SISSE *****
+		// *********************
 		if(isset($_POST["login"])){
-			echo "vajutas login nuppu!";
-			
-			//kontrollin, et e-post poleks tühi
 			if ( empty($_POST["email"]) ) {
 				$email_error = "See väli on kohustuslik";
-			} else {
-				$email = test_input($_POST["email"]);
+			}else{
+			// puhastame muutuja võimalikest üleliigsetest sümbolitest
+				$email = cleanInput($_POST["email"]);
 			}
-			
-			//kontrollin, et parool ei oleks tühi
 			if ( empty($_POST["password"]) ) {
-				$password_error = "Parool on kohustuslik";
-			} else {
-			
-			
-				//kontrollin, et parool oleks vähemalt 8 sümbolit pikk
-				if(strlen($_POST["password"]) < 8) {
-					$password_error = "Peab olema vähemalt 8 tähemärki pikk!";
-				}
+				$password_error = "See väli on kohustuslik";
+			}else{
+				$password = cleanInput($_POST["password"]);
 			}
+			// Kui oleme siia jõudnud, võime kasutaja sisse logida
+			if($password_error == "" && $email_error == ""){
+				echo "Võib sisse logida! Kasutajanimi on ".$email." ja parool on ".$password;
 			
-			//kontrollin, et poleks erroreid
-			if($email_error == "" && $password_error == "") {
-				echo "kontrollisin sisselogimist ".$email." ja parool";
-			}
-			
-			
-				//keegi vajutas create nuppu
-		} elseif(isset($_POST["create"])){
-			echo "vajutas create nuppu!";
+				$hash = hash("sha512", $password);
 				
-			//valideerimine create user vormile
-			//kontrollin, et nimi ei ole tühi
-			if (empty($_POST["name"])) {
-				$name_error = "see väli on kohustuslik";
-			} else{
-				//kõik korras
-				//test_input eemaldab pahatahtlikud osad
-				$name = test_input($_POST["name"]);
-			}
-			
-			//kontrollin, et epost poleks tühi
-			
-			if ( empty($_POST["email"]) ) {
-				$email_error = "See väli on kohustuslik";
-			}
-			
-			
-			if ( empty($_POST["password"]) ) {
-				$password_error = "Parool on kohustuslik";
-			} else {
-			
-			
-				if(strlen($_POST["password"]) < 8) {
-					$password_error = "Peab olema vähemalt 8 tähemärki pikk!";
+				
+				//kasutaja logis edukalt sisse 
+				if(isset($login_response->success)){
+					
+					//id, email
+					$_SESSION["logged_in_user_id"] = $login_response->user->id;
+					$_SESSION["logged_in_user_email"] = $login_response->user->email;
+					
+					//saadan sõnumi teise faili kasutades sessiooni
+					$_SESSION["login_success_message"] = $login_response->success->message;
+					header("Location: data.php");
 				}
+				
 			}
-			
-			if($name_error == "") {
-				echo "salvestan andmebaasi:" .$name;
-			}
-		}
+		} // login if end
+		// *********************
+		// ** LOO KASUTAJA *****
+		// *********************
+		if(isset($_POST["create"])){
+				if ( empty($_POST["create_email"]) ) {
+					$create_email_error = "See väli on kohustuslik";
+				}else{
+					$create_email = cleanInput($_POST["create_email"]);
+				}
+				if ( empty($_POST["create_password"]) ) {
+					$create_password_error = "See väli on kohustuslik";
+				} else {
+					if(strlen($_POST["create_password"]) < 8) {
+						$create_password_error = "Peab olema vähemalt 8 tähemärki pikk!";
+					}else{
+						$create_password = cleanInput($_POST["create_password"]);
+					}
+				}
+				if(	$create_email_error == "" && $create_password_error == ""){
+					
+					// räsi paroolist, mille salvestame ab'i
+					$hash = hash("sha512", $create_password);
+					
+					echo "Võib kasutajat luua! Kasutajanimi on ".$create_email." ja parool on ".$create_password." ja räsi on ".$hash;
+					
+					
+					
+				}
+		} // create if end
 	}
-			
-		
+  // funktsioon, mis eemaldab kõikvõimaliku üleliigse tekstist
+  function cleanInput($data) {
+  	$data = trim($data);
+  	$data = stripslashes($data);
+  	$data = htmlspecialchars($data);
+  	return $data;
+  }
 	
 	
-		function test_input($data) {
-			//võtab ära tühikud, enterid, tabid
-			$data = trim($data);
-			//tagurpidi kaldkriipsud
-			$data = stripslashes($data);
-			//teeb htmli tekstiks
-			$data = htmlspecialchars($data);
-			return $data;
-		}
-		
+	
 ?>
-<?php 
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+</head>
+<body>
 
-
-$page_title = "Login";
-$page_file_name = "login.php";
-?>
-<?php require_once("../header.php"); ?>
-	<h2>Log in</h2>
-		<form action="login.php" method="post">
-			<input name="email" type="email" placeholder="E-post"> <?php echo $email; ?> <?php echo $email_error; ?> <br> <br>
-			<input name="password" type="password" placeholder="Parool"> <?php echo $password_error ?> <br> <br>
-			<input name="login" type="submit" value="Log in"> <br> <br>
-		</form>
-		<h2>Create user </h2>
-
-		<form action="login.php" method="post">
-		<input name="email" type="email" placeholder="E-post">* <?php echo $name; ?> <?php echo $email_error; ?> <br> <br>
-		<input name="password" type="password" placeholder="Parool">* <?php echo $password_error; ?> <br> <br>
-		<input name="name" type="name" placeholder="Eesnimi Perekonnanimi">* <?php echo $name_error; ?> <br> <br>
-
-		<input name="create" type="submit" value="Create"> <br> <br>
-
-		</form>
+  <h2>Log in</h2>
+    <?php if(isset($login_response->error)): ?>
+  
+	<p style="color:red;">
+		<?=$login_response->error->message;?>
+	</p>
+  
+  <?php elseif(isset($login_response->success)): ?>
 	
+	<p style="color:green;" >
+		<?=$login_response->success->message;?>
+	</p>
+	
+  <?php endif; ?>
+  <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" >
+  	<input name="email" type="email" placeholder="E-post" value="<?php echo $email; ?>"> <?php echo $email_error; ?><br><br>
+  	<input name="password" type="password" placeholder="Parool" value="<?php echo $password; ?>"> <?php echo $password_error; ?><br><br>
+  	<input type="submit" name="login" value="Log in">
+  </form>
+
+  <h2>Create user</h2>
+  
+  <?php if(isset($create_response->error)): ?>
+  
+	<p style="color:red;">
+		<?=$create_response->error->message;?>
+	</p>
+  
+  <?php elseif(isset($create_response->success)): ?>
+	
+	<p style="color:green;" >
+		<?=$create_response->success->message;?>
+	</p>
+	
+  <?php endif; ?>
+  
+  
+  <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" >
+  	<input name="create_email" type="email" placeholder="E-post" value="<?php echo $create_email; ?>"> <?php echo $create_email_error; ?><br><br>
+  	<input name="create_password" type="password" placeholder="Parool"> <?php echo $create_password_error; ?> <br><br>
+  	<input type="submit" name="create" value="Create user">
+  </form>
+<body>
+<html>
+
 <?php require_once("../footer.php"); ?>
-
-
